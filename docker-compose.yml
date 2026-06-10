@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  fraud-detector:
+    build:
+      context: .
+    container_name: fraud-detection-app
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: on-failure
