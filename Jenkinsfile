@@ -6,10 +6,15 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/Shshank009/fraud-detection-pipeline.git'
             }
         }
+        stage('Install Python') {
+            steps {
+                sh 'sudo apt-get install -y python3 python3-pip'
+            }
+        }
         stage('Test') {
             steps {
-                sh 'pip install -r requirements.txt'
-                sh 'python -m unittest tests/test_fraud_logic.py -v'
+                sh 'pip3 install -r requirements.txt'
+                sh 'python3 -m unittest tests/test_fraud_logic.py -v'
             }
         }
         stage('Build Docker Image') {
