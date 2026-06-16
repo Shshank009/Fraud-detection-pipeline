@@ -13,7 +13,7 @@ pipeline {
         }
         stage('Test') {
             steps {
-                sh 'pip3 install -r requirements.txt'
+                sh 'pip3 install -r requirements.txt --break-system-packages'
                 sh 'python3 -m unittest tests/test_fraud_logic.py -v'
             }
         }
