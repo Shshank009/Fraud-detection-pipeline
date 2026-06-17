@@ -2,8 +2,7 @@ version: "3.8"
 
 services:
   fraud-detector:
-    build:
-      context: .
+    image: 326158158021.dkr.ecr.ap-south-1.amazonaws.com/fraud-detection-app:latest
     container_name: fraud-detection-app
     volumes:
       - ./data:/app/data
