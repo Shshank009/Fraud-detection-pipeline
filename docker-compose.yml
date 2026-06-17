@@ -7,7 +7,7 @@ services:
     container_name: fraud-detection-app
     volumes:
       - ./data:/app/data
-      - ~/.aws:/root/.aws:ro
+      - /home/ubuntu/.aws:/root/.aws:ro
     environment:
       - PYTHONUNBUFFERED=1
       - AWS_DEFAULT_REGION=ap-south-1
