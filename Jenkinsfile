@@ -38,10 +38,15 @@ pipeline {
                 sh 'docker push ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}'
             }
         }
-        stage('Deploy') {
+        stage('Deploy from ECR') {
             steps {
+                sh '''
+                    aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | \
+                    docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                '''
                 sh 'docker compose down || true'
-                sh 'docker compose up -d --build'
+                sh 'docker pull ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}'
+                sh 'docker compose up -d'
             }
         }
     }
