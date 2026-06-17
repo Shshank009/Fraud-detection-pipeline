@@ -4,7 +4,7 @@ pipeline {
         AWS_DEFAULT_REGION = 'ap-south-1'
         ECR_REGISTRY = '326158158021.dkr.ecr.ap-south-1.amazonaws.com'
         ECR_REPO = 'fraud-detection-app'
-        IMAGE_TAG = "latest"
+        IMAGE_TAG = "build-${BUILD_NUMBER}"
     }
     stages {
         stage('Checkout') {
@@ -26,6 +26,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t ${ECR_REPO}:${IMAGE_TAG} .'
+                sh 'docker tag ${ECR_REPO}:${IMAGE_TAG} ${ECR_REPO}:latest'
             }
         }
         stage('Push to ECR') {
@@ -34,20 +35,7 @@ pipeline {
                     aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | \
                     docker login --username AWS --password-stdin ${ECR_REGISTRY}
                 '''
+                // Push both build tag and latest tag
                 sh 'docker tag ${ECR_REPO}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}'
-                sh 'docker push ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}'
-            }
-        }
-        stage('Deploy from ECR') {
-            steps {
-                sh '''
-                    aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | \
-                    docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                '''
-                sh 'docker compose down || true'
-                sh 'docker pull ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}'
-                sh 'docker compose up -d'
-            }
-        }
-    }
-}
+                sh 'docker tag ${ECR_REPO}:latest ${ECR_REGISTRY}/${ECR_REPO}:latest'
+                sh 'docker push
