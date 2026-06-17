@@ -2,6 +2,9 @@ pipeline {
     agent any
     environment {
         AWS_DEFAULT_REGION = 'ap-south-1'
+        ECR_REGISTRY = '326158158021.dkr.ecr.ap-south-1.amazonaws.com'
+        ECR_REPO = 'fraud-detection-app'
+        IMAGE_TAG = "latest"
     }
     stages {
         stage('Checkout') {
@@ -22,7 +25,17 @@ pipeline {
         }
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t fraud-detection-app:latest .'
+                sh 'docker build -t ${ECR_REPO}:${IMAGE_TAG} .'
+            }
+        }
+        stage('Push to ECR') {
+            steps {
+                sh '''
+                    aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | \
+                    docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                '''
+                sh 'docker tag ${ECR_REPO}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}'
+                sh 'docker push ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}'
             }
         }
         stage('Deploy') {
