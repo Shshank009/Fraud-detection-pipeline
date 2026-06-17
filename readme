@@ -1,0 +1,323 @@
+# 🚨 Fraud Detection Pipeline
+
+An automated CI/CD pipeline that ingests banking transaction data, applies fraud detection rules, flags suspicious transactions, stores results in AWS DynamoDB, and sends real-time email alerts via AWS SNS. The entire system is containerized with Docker and deployed on AWS EC2 through a Jenkins pipeline.
+
+---
+
+## 📌 Project Overview
+
+This project simulates a real-world banking fraud detection system. Transaction data is uploaded to AWS S3, processed by a Python rules engine, and flagged transactions are automatically stored in DynamoDB and trigger email alerts via SNS. Every code push to GitHub automatically triggers the full CI/CD pipeline — from testing to deployment — with zero manual intervention.
+
+---
+
+## 🏗️ Architecture
+
+Developer (GitHub Push)
+
+│
+
+▼
+
+┌─────────────────────┐
+
+│     GitHub Repo     │
+
+└──────────┬──────────┘
+
+│ Webhook
+
+▼
+
+┌─────────────────────┐
+
+│      Jenkins        │
+
+│                     │
+
+│  1. Checkout Code   │
+
+│  2. Run Unit Tests  │
+
+│  3. Build Image     │
+
+│  4. Push to ECR     │
+
+│  5. Deploy          │
+
+│  6. Cleanup         │
+
+└──────────┬──────────┘
+
+│
+
+▼
+
+┌─────────────────────┐
+
+│      AWS ECR        │ ← Docker Image Registry
+
+└──────────┬──────────┘
+
+│ Pull Image
+
+▼
+
+┌─────────────────────────────────────────┐
+
+│              AWS EC2                    │
+
+│                                         │
+
+│  ┌──────────────────────────────────┐   │
+
+│  │     Docker Container             │   │
+
+│  │     (Fraud Detection App)        │   │
+
+│  │                                  │   │
+
+│  │  Reads from S3                   │   │
+
+│  │       ↓                          │   │
+
+│  │  Applies Fraud Rules             │   │
+
+│  │       ↓                          │   │
+
+│  │  Flags Transactions              │   │
+
+│  │       ↓              ↓           │   │
+
+│  │  DynamoDB         SNS Email      │   │
+
+│  └──────────────────────────────────┘   │
+
+└─────────────────────────────────────────┘
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Cloud | AWS EC2, S3, DynamoDB, SNS, ECR |
+| CI/CD | Jenkins, Jenkinsfile |
+| Containerisation | Docker, Docker Compose |
+| Backend | Python 3.9 |
+| Testing | Python unittest |
+| Version Control | Git, GitHub |
+| OS | Ubuntu 24.04 LTS |
+
+---
+
+## 🚨 Fraud Detection Rules
+
+| Rule | Condition | Flag Reason |
+|---|---|---|
+| High Amount | Transaction > £10,000 | HIGH_AMOUNT |
+| Suspicious Location | Country in [XX, ZZ, KP, IR] | SUSPICIOUS_LOCATION |
+| Odd Hours | Transaction between 1am - 4am | ODD_HOURS |
+| Missing Fields | Required fields missing | MISSING_FIELDS |
+
+---
+
+## 📁 Repository Structure
+
+
+fraud-detection-pipeline/
+
+├── app.py                          # Main application
+
+├── fraud_logic.py                  # Fraud detection rules engine
+
+├── Dockerfile                      # Container definition
+
+├── docker-compose.yml              # Container orchestration
+
+├── Jenkinsfile                     # CI/CD pipeline definition
+
+├── requirements.txt                # Python dependencies
+
+├── data/
+
+│   └── sample_transactions.json   # Sample transaction data
+
+└── tests/
+
+└── test_fraud_logic.py        # Unit tests
+
+---
+
+## 🔄 CI/CD Pipeline Stages
+
+Stage 1: Checkout    → Pull latest code from GitHub
+
+Stage 2: Test        → Run 7 unit tests
+
+Stage 3: Build       → Build Docker image tagged with build number
+
+Stage 4: Push to ECR → Push image to AWS ECR (latest + build-X tags)
+
+Stage 5: Deploy      → Pull from ECR and deploy on EC2
+
+Stage 6: Cleanup     → Remove old local images
+
+Every build is tagged with a unique build number (e.g. `build-13`) in ECR — enabling full traceability and rollback capability.
+
+---
+
+## ☁️ AWS Services
+
+| Service | Purpose |
+|---|---|
+| **S3** | Stores input transaction JSON files |
+| **DynamoDB** | Stores all flagged/suspicious transactions |
+| **SNS** | Sends real-time email alerts for fraud |
+| **ECR** | Hosts versioned Docker images |
+| **EC2** | Runs Jenkins and the fraud detection container |
+
+---
+
+## 🚀 How to Deploy
+
+### Prerequisites
+- AWS Account with IAM credentials
+- AWS CLI configured
+- EC2 instance (t2.small or higher)
+- Docker + Docker Compose
+- Jenkins with GitHub webhook
+
+### Step 1: Clone the repository
+```bash
+git clone https://github.com/Shshank009/fraud-detection-pipeline.git
+cd fraud-detection-pipeline
+```
+
+### Step 2: Upload transaction data to S3
+```bash
+aws s3 cp data/sample_transactions.json s3://your-bucket-name/
+```
+
+### Step 3: Configure AWS services
+- Create S3 bucket for transaction files
+- Create DynamoDB table named `fraud_results` with partition key `transaction_id`
+- Create SNS topic named `fraud-alerts` and subscribe your email
+- Create ECR repository named `fraud-detection-app`
+
+### Step 4: Run manually with Docker Compose
+```bash
+docker compose up --build
+```
+
+### Step 5: Or trigger via Jenkins
+- Access Jenkins at `http://<ec2-public-ip>:8080`
+- Run the `fraud-detection-pipeline` job
+- Pipeline runs automatically on every GitHub push
+
+---
+
+## 📊 Sample Transaction Data
+
+```json
+[
+    {
+        "transaction_id": "TXN001",
+        "account_id": "ACC123",
+        "amount": 250.00,
+        "country": "GB",
+        "hour": 14,
+        "description": "Online Purchase"
+    },
+    {
+        "transaction_id": "TXN002",
+        "account_id": "ACC456",
+        "amount": 15000.00,
+        "country": "GB",
+        "hour": 10,
+        "description": "Wire Transfer"
+    }
+]
+```
+
+---
+
+## 📧 Sample Fraud Alert Email
+
+🚨 FRAUD ALERT - SecureBank Fraud Detection System
+Transaction ID  : TXN002
+
+Account ID      : ACC456
+
+Amount          : £15000.0
+
+Country         : GB
+
+Fraud Reason    : HIGH_AMOUNT
+
+Flagged At      : 2026-06-17T11:48:55 UTC
+Please investigate this transaction immediately.
+-- SecureBank Fraud Detection System
+
+---
+
+## 🧪 Running Tests
+
+```bash
+python3 -m unittest tests/test_fraud_logic.py -v
+```
+
+Expected output:
+
+test_boundary_amount ... ok
+
+test_high_amount ... ok
+
+test_missing_fields ... ok
+
+test_normal_transaction ... ok
+
+test_odd_hours ... ok
+
+test_rules_summary ... ok
+
+test_suspicious_location ... ok
+Ran 7 tests in 0.000s OK
+
+---
+
+## 🐛 Key Challenges Solved
+
+- Configured AWS credentials for Docker containers running inside Jenkins
+- Resolved ECR authentication in non-interactive Jenkins pipeline
+- Implemented build-number tagging for full image traceability in ECR
+- Mounted AWS credentials securely without hardcoding in source code
+- Configured swap space on t2.small to handle Jenkins + Docker build load
+
+---
+
+## 💼 Interview Talking Points
+
+**What problem does this solve?**
+> Fraud detection is a critical banking requirement. This system automates the detection and alerting process — transactions are analysed the moment they are uploaded, suspicious ones are flagged, stored and reported with no manual intervention.
+
+**Why Jenkins and Docker?**
+> Jenkins automates the entire build, test and deploy process. Docker ensures the application runs identically in every environment — development, testing and production.
+
+**Why ECR instead of Docker Hub?**
+> ECR is a private AWS registry — more secure for banking applications. It integrates natively with AWS IAM for access control and with EC2 for fast image pulls within the same region.
+
+**What happens when fraud is detected?**
+> The transaction is flagged by the rules engine, saved to DynamoDB for audit purposes, and an email alert is sent via SNS to the fraud investigation team — all within seconds.
+
+---
+
+## 👤 Author
+
+**Shashank Bankar**
+GitHub: [@Shshank009](https://github.com/Shshank009)
+
+---
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
